@@ -41,7 +41,7 @@ void TrajectoryPlanner::calculateTrajectory() {
 
 void TrajectoryPlanner::stayConstantInFrenet() {
     vector<double> next;
-
+    
     double dist_inc = 0.4;
     for (int i=0; i<50; i++){
         double next_s = current_s_+(i+1)*dist_inc;
