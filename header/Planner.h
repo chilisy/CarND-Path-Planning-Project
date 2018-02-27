@@ -10,6 +10,12 @@
 
 #include <math.h>
 #include <vector>
+#include <iostream>
+#include <fstream>
+#include <thread>
+#include <chrono>
+#include "../src/Eigen-3.3/Eigen/Core"
+#include "../src/Eigen-3.3/Eigen/QR"
 
 using namespace std;
 
@@ -39,6 +45,8 @@ public:
     TrajectoryPlanner();
     
     virtual ~TrajectoryPlanner();
+    
+    void readMap(string mapfile);
     
     void getCurrentTelemetry(vector<double> car_telemetry);
     
