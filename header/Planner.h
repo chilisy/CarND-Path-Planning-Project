@@ -21,6 +21,7 @@ using namespace std;
 
 class TrajectoryPlanner{
     
+    // variables:
     double current_x_;
     double current_y_;
     double current_s_;
@@ -34,23 +35,27 @@ class TrajectoryPlanner{
     vector<double> map_dx_;
     vector<double> map_dy_;
     
+    // The max s value before wrapping around the track back to 0
+    double max_s_ = 6945.554;
+    
+    // methods:
     void stayConstantInFrenet();
     
 public:
     
-    // variables
+    // variables:
     vector<double> next_x_vals;
     vector<double> next_y_vals;
     
+    // constructor
     TrajectoryPlanner();
     
     virtual ~TrajectoryPlanner();
     
+    // methods:
     void readMap(string mapfile);
     
     void getCurrentTelemetry(vector<double> car_telemetry);
-    
-    void getMapPoints(vector<double> x, vector<double> y, vector<double> s, vector<double> dx, vector<double> dy);
     
     void calculateTrajectory();
     

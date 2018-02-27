@@ -26,8 +26,7 @@ int main() {
     
     // Waypoint map to read from
     string map_file_ = "../../data/highway_map.csv";
-    // The max s value before wrapping around the track back to 0
-    double max_s = 6945.554;
+    
     
     TrajectoryPlanner tp = TrajectoryPlanner();
     tp.readMap(map_file_);
@@ -72,20 +71,13 @@ int main() {
                     
                     json msgJson;
                     
-                    vector<double> next_x_vals;
-                    vector<double> next_y_vals;
-                    
-                    
                     // TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
                     tp.getCurrentTelemetry(car_telemetry);
                     
                     tp.calculateTrajectory();
                     
-                    next_x_vals = tp.next_x_vals;
-                    next_y_vals = tp.next_y_vals;
-                    
-                    msgJson["next_x"] = next_x_vals;
-                    msgJson["next_y"] = next_y_vals;
+                    msgJson["next_x"] = tp.next_x_vals;
+                    msgJson["next_y"] = tp.next_y_vals;
                     
                     auto msg = "42[\"control\","+ msgJson.dump()+"]";
                     
