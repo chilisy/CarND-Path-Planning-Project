@@ -16,12 +16,12 @@ using namespace std;
 
 class LaneCost{
     // telemetry
-    double current_x_;
-    double current_y_;
-    double current_s_;
-    double current_d_;
-    double current_yaw_;
-    double current_speed_;
+    double ego_x_;
+    double ego_y_;
+    double ego_s_;
+    double ego_d_;
+    double ego_yaw_;
+    double ego_speed_;
     
     double inefficient_cost_;
     double target_lane_cost_;

@@ -7,7 +7,7 @@
 #include "Planner.h"
 
 TrajectoryPlanner::TrajectoryPlanner() {
-    
+    lane_costs_.resize(COUNT_LANES);
 }
 
 TrajectoryPlanner::~TrajectoryPlanner() {

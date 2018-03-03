@@ -16,12 +16,12 @@ LaneCost::~LaneCost() {
 }
 
 void LaneCost::add_ego_telemetry(double x, double y, double s, double d, double yaw, double v) {
-    current_x_ = x;
-    current_y_ = y;
-    current_s_ = s;
-    current_d_ = d;
-    current_yaw_ = yaw;
-    current_speed_ = v;
+    ego_x_ = x;
+    ego_y_ = y;
+    ego_s_ = s;
+    ego_d_ = d;
+    ego_yaw_ = yaw;
+    ego_speed_ = v;
 }
 
 void LaneCost::add_vehicle(sensor_obj obj) {
