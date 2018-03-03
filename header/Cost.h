@@ -15,6 +15,11 @@
 using namespace std;
 
 class LaneCost{
+    const double range_of_concern_ = 50.0;
+    
+    const double weight_speed = 5.0*pow(10, 4);
+    const double weight_lane = pow(10, 4);
+    
     // telemetry
     double ego_x_;
     double ego_y_;
@@ -27,7 +32,6 @@ class LaneCost{
     double target_lane_cost_;
     
     vector<sensor_obj> vehicles_;
-    double dist_2_ego_s;
     
     void calculateLaneSpeed();
     
@@ -38,12 +42,15 @@ class LaneCost{
 public:
     double lane_cost;
     double lane_speed;
+    int lane_id;
     
     LaneCost();
     
     virtual ~LaneCost();
     
     void add_ego_telemetry(double x, double y, double s, double d, double yaw, double v);
+    
+    void set_lane(int lane);
     
     void add_vehicle(sensor_obj obj);
     

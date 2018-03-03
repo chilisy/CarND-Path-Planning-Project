@@ -22,9 +22,12 @@ void TrajectoryPlanner::getCurrentTelemetry(vector<double> car_telemetry){
     current_yaw_ = car_telemetry[4];
     current_speed_ = car_telemetry[5];
     
+    int iLane = 0;
     for (vector<LaneCost>::iterator it = lane_costs_.begin(); it!=lane_costs_.end(); ++it){
         it->add_ego_telemetry(current_x_, current_y_, current_s_, current_d_, current_yaw_, current_speed_);
-    }    
+        it->set_lane(iLane);
+        iLane++;
+    }
 }
 
 void TrajectoryPlanner::getPreviousPath(vector<double> prev_x_path, vector<double> prev_y_path){
@@ -72,7 +75,7 @@ void TrajectoryPlanner::getSensorData(vector<vector<double> > sensor_data) {
                 // add obj
                 lane_costs_[lane_-1].add_vehicle(*it);
                 
-                if (it->s > current_s_ - 2*CAR_LENGTH && it->s < current_s_ + 2*CAR_LENGTH) {
+                if (it->s > current_s_ - CAR_LENGTH && it->s < current_s_ + CAR_LENGTH) {
                     car_left_id_ = it->id;
                     cout << "car left detected: " << car_left_id_ << endl;
                 }
@@ -86,7 +89,7 @@ void TrajectoryPlanner::getSensorData(vector<vector<double> > sensor_data) {
                 // add obj
                 lane_costs_[lane_+1].add_vehicle(*it);
                 
-                if (it->s > current_s_ - 2*CAR_LENGTH && it->s < current_s_ + 2*CAR_LENGTH) {
+                if (it->s > current_s_ - CAR_LENGTH && it->s < current_s_ + CAR_LENGTH) {
                     car_right_id_ = it->id;
                     cout << "car right detected: " << car_right_id_ << endl;
                 }
@@ -123,8 +126,12 @@ void TrajectoryPlanner::calculateTrajectory() {
     
     chooseNextState();
     
-    if (current_state_ == KL) {
+    if (current_state_ == KL || current_state_ == PCLL || current_state_ == PCLR) {
         lane_ = lane_ + 0;
+    } else if (current_state_ == CLL) {
+        lane_--;
+    } else if (current_state_ == CLR) {
+        lane_++;
     }
     
     driveLane(lane_);
@@ -148,15 +155,15 @@ void TrajectoryPlanner::transform2GlobalCoord(vector<double> &pts_global_x, vect
 
 void TrajectoryPlanner::calculateVelocity() {
     
-    double target_vel = max_vel_*mph2ms;
-    if (car_ahead_id_ != ID_DEFAULT) {
+    double target_vel = lane_costs_[lane_].lane_speed;
+    /*if (car_ahead_id_ != ID_DEFAULT) {
         target_vel = (dist(0.0, 0.0, objs_[car_ahead_id_].vx, objs_[car_ahead_id_].vy));
-    }
+    }*/
     
     if (vel_ - target_vel > 0.1) {
-        vel_ -= max_acc_;
+        vel_ -= max_acc;
     } else if (target_vel - vel_ > 0.1) {
-        vel_ += max_acc_;
+        vel_ += max_acc;
     }
 }
 
@@ -188,10 +195,10 @@ void TrajectoryPlanner::driveLane(int lane) {
     ptsy.push_back(ref_y);
     
     
-    vector<int> anchor_pts = {30, 60, 90};
+    vector<int> anchor_pts = {30, 70, 90};
     
     for (vector<int>::iterator it = anchor_pts.begin(); it!=anchor_pts.end(); ++it){
-        vector<double> next = getXY(current_s_+*it, (2+4*lane), map_s_, map_x_, map_y_);
+        vector<double> next = getXY(current_s_+*it, 2+4*lane, map_s_, map_x_, map_y_);
         ptsx.push_back(next[0]);
         ptsy.push_back(next[1]);
     }
@@ -226,7 +233,7 @@ void TrajectoryPlanner::driveLane(int lane) {
     
     for (int i=prev_x_.size(); i<COUNT_GEN_PTS; i++){
         calculateVelocity();
-        double N = target_dist/timestep_/vel_;
+        double N = target_dist/timestep/vel_;
         double x_point = x_add_on + target_x/N;
         cal_x.push_back(x_point);
         cal_y.push_back(spl(x_point));
@@ -274,8 +281,53 @@ void TrajectoryPlanner::getSuccessorStates() {
 
 void TrajectoryPlanner::chooseNextState() {
     
+    // get possible successor stats
     getSuccessorStates();
     
+    // calculate all lane costs
+    for (vector<LaneCost>::iterator it = lane_costs_.begin(); it!=lane_costs_.end(); ++it) {
+        it->calculateCost();
+    }
+    
+    double minCost = 99999999;
+    int target_lane_id = lane_;
+    for (vector<LaneCost>::iterator it = lane_costs_.begin(); it!=lane_costs_.end(); ++it) {
+        minCost = min(minCost, it->lane_cost);
+        if (minCost == it->lane_cost){
+            target_lane_id = it->lane_id;
+        }
+    }
+    
+    // do not change 2 lanes at once
+    if (target_lane_id-lane_ == 2){
+        target_lane_id = lane_;
+    }
+    
+    // change state
+    if (target_lane_id == lane_) {
+        current_state_ = KL;
+    }
+    // change lane right
+    else if (target_lane_id > lane_) {
+        // if change lane right possible
+        if (find(possible_states_.begin(), possible_states_.end(), CLR)!=possible_states_.end() &&
+            car_right_id_ == ID_DEFAULT){
+            current_state_ = CLR;
+        }
+        else {
+            current_state_ = PCLR;
+        }
+    }
+    // change lane left
+    else if (target_lane_id < lane_) {
+        // if change lane left possible
+        if (find(possible_states_.begin(), possible_states_.end(), CLL)!=possible_states_.end() && car_left_id_ == ID_DEFAULT){
+            current_state_ = CLL;
+        }
+        else {
+            current_state_ = PCLL;
+        }
+    }
     
 }
 

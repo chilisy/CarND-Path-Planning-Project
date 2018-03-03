@@ -67,7 +67,7 @@ class TrajectoryPlanner{
     double vel_ = 0.0;
     
     // start in middle lane
-    int lane_ = 1;
+    int lane_ = target_lane;
     
     // methods:
     void calculateVelocity();

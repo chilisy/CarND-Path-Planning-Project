@@ -13,13 +13,12 @@
 
 using namespace std;
 
-
 typedef enum{
-    KL,
-    CLL,
-    CLR,
-    PCLL,
-    PCLR
+    KL, // keep lane
+    CLL, // change lane left
+    CLR, // change lane right
+    PCLL, // prepare change lane left
+    PCLR // prepare change lane right
 } FSM_State;
 
 typedef struct {
@@ -41,12 +40,16 @@ double rad2deg(double x);
 const double max_s_ = 6945.554;
 
 const double mph2ms = 1/2.23694;
-const double timestep_ = 0.02;
+const double timestep = 0.02;
 
 // max velocity
-const double max_vel_ = 49.5;
-const double max_acc_ = 9.5 * timestep_;
-const double max_jerk_ = 9.5 * timestep_;
+const double max_vel = 49.5;
+const double max_acc = 9.5 * timestep;
+const double max_jerk = 9.5 * timestep;
+
+// target lane
+const int target_lane = 1;
+const double target_d = target_lane*4 + 2;
 
 int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x, const vector<double> &maps_y);
 
