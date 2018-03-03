@@ -13,6 +13,24 @@
 
 using namespace std;
 
+typedef enum{
+    KL,
+    CLL,
+    CLR,
+    PCLL,
+    PCLR
+} FSM_State;
+
+typedef struct {
+    int id;
+    double x;
+    double y;
+    double vx;
+    double vy;
+    double s;
+    double d;
+} sensor_obj;
+
 // For converting back and forth between radians and degrees.
 constexpr double pi();
 double deg2rad(double x);

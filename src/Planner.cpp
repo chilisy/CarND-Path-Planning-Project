@@ -21,6 +21,10 @@ void TrajectoryPlanner::getCurrentTelemetry(vector<double> car_telemetry){
     current_d_ = car_telemetry[3];
     current_yaw_ = car_telemetry[4];
     current_speed_ = car_telemetry[5];
+    
+    for (vector<LaneCost>::iterator it = lane_costs_.begin(); it!=lane_costs_.end(); ++it){
+        it->add_ego_telemetry(current_x_, current_y_, current_s_, current_d_, current_yaw_, current_speed_);
+    }    
 }
 
 void TrajectoryPlanner::getPreviousPath(vector<double> prev_x_path, vector<double> prev_y_path){
@@ -29,6 +33,7 @@ void TrajectoryPlanner::getPreviousPath(vector<double> prev_x_path, vector<doubl
 }
 
 void TrajectoryPlanner::getSensorData(vector<vector<double> > sensor_data) {
+
     int size_sensor = sensor_data.size();
     vector<sensor_obj> objs;
     sensor_obj obj;
@@ -52,6 +57,8 @@ void TrajectoryPlanner::getSensorData(vector<vector<double> > sensor_data) {
         // check car ahead
         // check lane
         if (it->d < (2+4*lane_+2) && it->d > (2+4*lane_-2)) {
+            // add obj
+            lane_costs_[lane_].add_vehicle(*it);
             // check gap in s
             if (it->s > current_s_ && it->s-current_s_ < SPACE_2_CAR_AHEAD) {
                 car_ahead_id_ = it->id;
@@ -59,9 +66,12 @@ void TrajectoryPlanner::getSensorData(vector<vector<double> > sensor_data) {
         }
         
         // check car left
-        if (lane_ > 0) {
+        if (lane_ > 0 && lane_ <= 2) {
             // check lane
             if (it->d < (2+4*(lane_-1)+2) && it->d > (2+4*(lane_-1)-2)) {
+                // add obj
+                lane_costs_[lane_-1].add_vehicle(*it);
+                
                 if (it->s > current_s_ - 2*CAR_LENGTH && it->s < current_s_ + 2*CAR_LENGTH) {
                     car_left_id_ = it->id;
                     cout << "car left detected: " << car_left_id_ << endl;
@@ -73,15 +83,16 @@ void TrajectoryPlanner::getSensorData(vector<vector<double> > sensor_data) {
         if (lane_ >= 0 && lane_ < 2) {
             // check lane
             if (it->d < (2+4*(lane_+1)+2) && it->d > (2+4*(lane_+1)-2)) {
+                // add obj
+                lane_costs_[lane_+1].add_vehicle(*it);
+                
                 if (it->s > current_s_ - 2*CAR_LENGTH && it->s < current_s_ + 2*CAR_LENGTH) {
                     car_right_id_ = it->id;
                     cout << "car right detected: " << car_right_id_ << endl;
                 }
             }
         }
-        
     }
-    
 }
 
 void TrajectoryPlanner::readMap(string mapfile) {

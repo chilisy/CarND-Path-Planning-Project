@@ -26,24 +26,7 @@ using namespace std;
 #define ID_DEFAULT 9999
 #define CAR_LENGTH 8
 #define SPACE_2_CAR_AHEAD 30
-
-typedef enum{
-    KL,
-    CLL,
-    CLR,
-    PCLL,
-    PCLR
-} FSM_State;
-
-typedef struct {
-    int id;
-    double x;
-    double y;
-    double vx;
-    double vy;
-    double s;
-    double d;
-} sensor_obj;
+#define COUNT_LANES 3
 
 class TrajectoryPlanner{
     
@@ -77,7 +60,9 @@ class TrajectoryPlanner{
     FSM_State current_state_;
     vector<FSM_State> possible_states_;
     
-    // cars
+    // costs
+    vector<LaneCost> lane_costs_;
+    lane_costs_.resize(COUNT_LANES);
     
     
     // The max s value before wrapping around the track back to 0
