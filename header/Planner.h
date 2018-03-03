@@ -29,6 +29,16 @@ typedef enum{
     PCLR
 } trajectoryType;
 
+typedef struct {
+    int id;
+    double x;
+    double y;
+    double vx;
+    double vy;
+    double s;
+    double d;
+} sensor_obj;
+
 class TrajectoryPlanner{
     
     // variables:
@@ -54,16 +64,23 @@ class TrajectoryPlanner{
     // The max s value before wrapping around the track back to 0
     double max_s_ = 6945.554;
     
-    // disired velocity
-    double ref_vel = 49.5;
+    // desired velocity
+    double vel_ = 0.0;
     
     // start in middle lane
     int lane_ = 1;
     
     double mph2ms = 1/2.23694;
-    double timestep = 0.02;
+    double timestep_ = 0.02;
     
-    // methods:    
+    // max velocity
+    double max_vel_ = 49.5;
+    double max_acc_ = 9.5 * timestep_;
+    double max_jerk_ = 9.5 * timestep_;
+    
+    // methods:
+    void calculateVelocity();
+    
     void keepLane();
     
     void transform2CarCoord(vector<double> &pts_car_x, vector<double> &pts_car_y, double ref_x, double ref_y, double ref_yaw, vector<double> pts_global_x, vector<double> pts_global_y);

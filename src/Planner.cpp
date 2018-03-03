@@ -34,6 +34,10 @@ void TrajectoryPlanner::getPreviousPath(vector<double> prev_x_path, vector<doubl
 void TrajectoryPlanner::getSensorData(vector<vector<double> > sensor_data) {
     int size_sensor = sensor_data.size();
     
+    for (int i=0; i<size_sensor; i++) {
+        
+    }
+    
 }
 
 void TrajectoryPlanner::readMap(string mapfile) {
@@ -85,9 +89,18 @@ void TrajectoryPlanner::transform2GlobalCoord(vector<double> &pts_global_x, vect
     }
 }
 
-void TrajectoryPlanner::keepLane() {
+void TrajectoryPlanner::calculateVelocity() {
     
-    //int prev_size = next_x_vals.size();
+    double desired_vel = max_vel_*mph2ms;
+    
+    if (vel_ - desired_vel > 0.1) {
+        vel_ -= max_acc_;
+    } else if (desired_vel - vel_ > 0.1) {
+        vel_ += max_acc_;
+    }
+}
+
+void TrajectoryPlanner::keepLane() {
     
     vector<double> ptsx, ptsy;
     
@@ -97,8 +110,8 @@ void TrajectoryPlanner::keepLane() {
     
     double prev_x = current_x_ - cos(current_yaw_);
     double prev_y = current_y_ - sin(current_yaw_);
-        
-        
+    
+    
     if (prev_x_.size() > 2) {
         ref_x = prev_x_[prev_x_.size()-1];
         ref_y = prev_y_[prev_x_.size()-1];
@@ -135,7 +148,7 @@ void TrajectoryPlanner::keepLane() {
     
     vector<double> x_out(COUNT_GEN_PTS);
     vector<double> y_out(COUNT_GEN_PTS);
-
+    
     // add previous points
     for (int i=0; i<prev_x_.size(); i++){
         x_out[i] = prev_x_[i];
@@ -150,8 +163,10 @@ void TrajectoryPlanner::keepLane() {
     
     //add new points
     double x_add_on = 0.0;
+    
     for (int i=prev_x_.size(); i<COUNT_GEN_PTS; i++){
-        double N = target_dist/timestep/ref_vel/mph2ms;
+        calculateVelocity();
+        double N = target_dist/timestep_/vel_;
         double x_point = x_add_on + target_x/N;
         cal_x.push_back(x_point);
         cal_y.push_back(spl(x_point));
@@ -173,4 +188,6 @@ void TrajectoryPlanner::keepLane() {
     next_x_vals = x_out;
     next_y_vals = y_out;
 }
+
+
 
