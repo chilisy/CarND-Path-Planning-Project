@@ -8,6 +8,8 @@
 #ifndef Planner_h
 #define Planner_h
 
+#include "helper_function.h"
+#include "spline.h"
 #include <math.h>
 #include <vector>
 #include <iostream>
@@ -16,6 +18,7 @@
 #include <chrono>
 #include "../src/Eigen-3.3/Eigen/Core"
 #include "../src/Eigen-3.3/Eigen/QR"
+#include "Cost.h"
 
 using namespace std;
 
@@ -30,7 +33,7 @@ typedef enum{
     CLR,
     PCLL,
     PCLR
-} trajectoryType;
+} FSM_State;
 
 typedef struct {
     int id;
@@ -70,10 +73,17 @@ class TrajectoryPlanner{
     int car_left_id_;
     int car_right_id_;
     
+    // FSM
+    FSM_State current_state_;
+    vector<FSM_State> possible_states_;
+    
+    // cars
+    
+    
     // The max s value before wrapping around the track back to 0
     double max_s_ = 6945.554;
     
-    // desired velocity
+    // target velocity
     double vel_ = 0.0;
     
     // start in middle lane
@@ -90,7 +100,11 @@ class TrajectoryPlanner{
     // methods:
     void calculateVelocity();
     
-    void keepLane();
+    void driveLane(int lane);
+    
+    void getSuccessorStates();
+    
+    void chooseNextState();
     
     void transform2CarCoord(vector<double> &pts_car_x, vector<double> &pts_car_y, double ref_x, double ref_y, double ref_yaw, vector<double> pts_global_x, vector<double> pts_global_y);
     

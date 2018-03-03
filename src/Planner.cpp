@@ -4,10 +4,7 @@
 //
 //  Created by ChenLiheng on 25.02.18.
 //
-
-#include "helper_function.h"
 #include "Planner.h"
-#include "spline.h"
 
 TrajectoryPlanner::TrajectoryPlanner() {
     
@@ -113,11 +110,13 @@ void TrajectoryPlanner::readMap(string mapfile) {
 
 void TrajectoryPlanner::calculateTrajectory() {
     
-    trajectoryType type = KL;
+    chooseNextState();
     
-    if (type == KL) {
-        keepLane();
+    if (current_state_ == KL) {
+        lane_ = lane_ + 0;
     }
+    
+    driveLane(lane_);
 }
 
 void TrajectoryPlanner::transform2CarCoord(vector<double> &pts_car_x, vector<double> &pts_car_y, double ref_x, double ref_y, double ref_yaw, vector<double> pts_global_x, vector<double> pts_global_y){
@@ -138,19 +137,19 @@ void TrajectoryPlanner::transform2GlobalCoord(vector<double> &pts_global_x, vect
 
 void TrajectoryPlanner::calculateVelocity() {
     
-    double desired_vel = max_vel_*mph2ms;
+    double target_vel = max_vel_*mph2ms;
     if (car_ahead_id_ != ID_DEFAULT) {
-        desired_vel = (distance(0.0, 0.0, objs_[car_ahead_id_].vx, objs_[car_ahead_id_].vy)+10)*mph2ms;
+        target_vel = (dist(0.0, 0.0, objs_[car_ahead_id_].vx, objs_[car_ahead_id_].vy));
     }
     
-    if (vel_ - desired_vel > 0.1) {
+    if (vel_ - target_vel > 0.1) {
         vel_ -= max_acc_;
-    } else if (desired_vel - vel_ > 0.1) {
+    } else if (target_vel - vel_ > 0.1) {
         vel_ += max_acc_;
     }
 }
 
-void TrajectoryPlanner::keepLane() {
+void TrajectoryPlanner::driveLane(int lane) {
     
     vector<double> ptsx, ptsy;
     
@@ -181,7 +180,7 @@ void TrajectoryPlanner::keepLane() {
     vector<int> anchor_pts = {30, 60, 90};
     
     for (vector<int>::iterator it = anchor_pts.begin(); it!=anchor_pts.end(); ++it){
-        vector<double> next = getXY(current_s_+*it, (2+4*lane_), map_s_, map_x_, map_y_);
+        vector<double> next = getXY(current_s_+*it, (2+4*lane), map_s_, map_x_, map_y_);
         ptsx.push_back(next[0]);
         ptsy.push_back(next[1]);
     }
@@ -209,7 +208,7 @@ void TrajectoryPlanner::keepLane() {
     
     double target_x = 30.0;
     double target_y = spl(target_x);
-    double target_dist = distance(0.0, 0.0, target_x, target_y);
+    double target_dist = dist(0.0, 0.0, target_x, target_y);
     
     //add new points
     double x_add_on = 0.0;
@@ -239,5 +238,33 @@ void TrajectoryPlanner::keepLane() {
     next_y_vals = y_out;
 }
 
+void TrajectoryPlanner::getSuccessorStates() {
+    
+    vector<FSM_State> possible_states;
+    possible_states.push_back(KL);
+    
+    if(current_state_ == KL) {
+        possible_states.push_back(PCLL);
+        possible_states.push_back(PCLR);
+    } else if (current_state_ == PCLL) {
+        if (lane_-1 >= 0) {
+            possible_states.push_back(PCLL);
+            possible_states.push_back(CLL);
+        }
+    } else if (current_state_ == PCLR) {
+        if (lane_+1 <=2) {
+            possible_states.push_back(PCLR);
+            possible_states.push_back(CLR);
+        }
+    }
+    
+    possible_states_ = possible_states;
+}
 
+void TrajectoryPlanner::chooseNextState() {
+    
+    getSuccessorStates();
+    
+    
+}
 

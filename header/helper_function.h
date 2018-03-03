@@ -23,7 +23,7 @@ int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x,
 
 int ClosestWaypoint(double x, double y, const vector<double> &maps_x, const vector<double> &maps_y);
 
-double distance(double x1, double y1, double x2, double y2);
+double dist(double x1, double y1, double x2, double y2);
 
 vector<double> getFrenet(double x, double y, double theta, const vector<double> &maps_x, const vector<double> &maps_y);
 

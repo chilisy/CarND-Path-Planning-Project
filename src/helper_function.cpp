@@ -11,7 +11,7 @@ constexpr double pi() { return M_PI; }
 double deg2rad(double x) { return x * pi() / 180; }
 double rad2deg(double x) { return x * 180 / pi(); }
 
-double distance(double x1, double y1, double x2, double y2)
+double dist(double x1, double y1, double x2, double y2)
 {
     return sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
 }
@@ -26,10 +26,10 @@ int ClosestWaypoint(double x, double y, const vector<double> &maps_x, const vect
     {
         double map_x = maps_x[i];
         double map_y = maps_y[i];
-        double dist = distance(x,y,map_x,map_y);
-        if(dist < closestLen)
+        double dis = dist(x,y,map_x,map_y);
+        if(dis < closestLen)
         {
-            closestLen = dist;
+            closestLen = dis;
             closestWaypoint = i;
         }
         
@@ -86,14 +86,14 @@ vector<double> getFrenet(double x, double y, double theta, const vector<double> 
     double proj_x = proj_norm*n_x;
     double proj_y = proj_norm*n_y;
     
-    double frenet_d = distance(x_x,x_y,proj_x,proj_y);
+    double frenet_d = dist(x_x,x_y,proj_x,proj_y);
     
     //see if d value is positive or negative by comparing it to a center point
     
     double center_x = 1000-maps_x[prev_wp];
     double center_y = 2000-maps_y[prev_wp];
-    double centerToPos = distance(center_x,center_y,x_x,x_y);
-    double centerToRef = distance(center_x,center_y,proj_x,proj_y);
+    double centerToPos = dist(center_x,center_y,x_x,x_y);
+    double centerToRef = dist(center_x,center_y,proj_x,proj_y);
     
     if(centerToPos <= centerToRef)
     {
@@ -104,10 +104,10 @@ vector<double> getFrenet(double x, double y, double theta, const vector<double> 
     double frenet_s = 0;
     for(int i = 0; i < prev_wp; i++)
     {
-        frenet_s += distance(maps_x[i],maps_y[i],maps_x[i+1],maps_y[i+1]);
+        frenet_s += dist(maps_x[i],maps_y[i],maps_x[i+1],maps_y[i+1]);
     }
     
-    frenet_s += distance(0,0,proj_x,proj_y);
+    frenet_s += dist(0,0,proj_x,proj_y);
     
     return {frenet_s,frenet_d};
     
