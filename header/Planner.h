@@ -20,6 +20,9 @@
 using namespace std;
 
 #define COUNT_GEN_PTS 50
+#define ID_DEFAULT 9999
+#define CAR_LENGTH 8
+#define SPACE_2_CAR_AHEAD 30
 
 typedef enum{
     KL,
@@ -60,6 +63,12 @@ class TrajectoryPlanner{
     // previous points
     vector<double> prev_x_;
     vector<double> prev_y_;
+    
+    // sensor objects
+    vector<sensor_obj> objs_;
+    int car_ahead_id_;
+    int car_left_id_;
+    int car_right_id_;
     
     // The max s value before wrapping around the track back to 0
     double max_s_ = 6945.554;

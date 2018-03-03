@@ -74,6 +74,7 @@ int main() {
                     // TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
                     tp.getCurrentTelemetry(car_telemetry);
                     tp.getPreviousPath(previous_path_x, previous_path_y);
+                    tp.getSensorData(sensor_fusion);
                     
                     tp.calculateTrajectory();
                     

@@ -33,8 +33,55 @@ void TrajectoryPlanner::getPreviousPath(vector<double> prev_x_path, vector<doubl
 
 void TrajectoryPlanner::getSensorData(vector<vector<double> > sensor_data) {
     int size_sensor = sensor_data.size();
-    
+    vector<sensor_obj> objs;
+    sensor_obj obj;
     for (int i=0; i<size_sensor; i++) {
+        obj.id = sensor_data[i][0];
+        obj.x = sensor_data[i][1];
+        obj.y = sensor_data[i][2];
+        obj.vx = sensor_data[i][3];
+        obj.vy = sensor_data[i][4];
+        obj.s = sensor_data[i][5];
+        obj.d = sensor_data[i][6];
+        
+        objs.push_back(obj);
+    }
+    objs_ = objs;
+    
+    car_ahead_id_ = ID_DEFAULT;
+    car_left_id_ = ID_DEFAULT;
+    car_right_id_ = ID_DEFAULT;
+    for (vector<sensor_obj>::iterator it = objs_.begin(); it!=objs_.end(); ++it) {
+        // check car ahead
+        // check lane
+        if (it->d < (2+4*lane_+2) && it->d > (2+4*lane_-2)) {
+            // check gap in s
+            if (it->s > current_s_ && it->s-current_s_ < SPACE_2_CAR_AHEAD) {
+                car_ahead_id_ = it->id;
+            }
+        }
+        
+        // check car left
+        if (lane_ > 0) {
+            // check lane
+            if (it->d < (2+4*(lane_-1)+2) && it->d > (2+4*(lane_-1)-2)) {
+                if (it->s > current_s_ - 2*CAR_LENGTH && it->s < current_s_ + 2*CAR_LENGTH) {
+                    car_left_id_ = it->id;
+                    cout << "car left detected: " << car_left_id_ << endl;
+                }
+            }
+        }
+        
+        // check car right
+        if (lane_ >= 0 && lane_ < 2) {
+            // check lane
+            if (it->d < (2+4*(lane_+1)+2) && it->d > (2+4*(lane_+1)-2)) {
+                if (it->s > current_s_ - 2*CAR_LENGTH && it->s < current_s_ + 2*CAR_LENGTH) {
+                    car_right_id_ = it->id;
+                    cout << "car right detected: " << car_right_id_ << endl;
+                }
+            }
+        }
         
     }
     
@@ -92,6 +139,9 @@ void TrajectoryPlanner::transform2GlobalCoord(vector<double> &pts_global_x, vect
 void TrajectoryPlanner::calculateVelocity() {
     
     double desired_vel = max_vel_*mph2ms;
+    if (car_ahead_id_ != ID_DEFAULT) {
+        desired_vel = (distance(0.0, 0.0, objs_[car_ahead_id_].vx, objs_[car_ahead_id_].vy)+10)*mph2ms;
+    }
     
     if (vel_ - desired_vel > 0.1) {
         vel_ -= max_acc_;
