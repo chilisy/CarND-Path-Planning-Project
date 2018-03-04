@@ -75,9 +75,7 @@ class TrajectoryPlanner{
     // methods:
     void calculateVelocity();
     
-    void driveLane(int lane);
-    
-    void changeLane(int ego_lane, int target_lane);
+    void driveLane();
     
     void getSuccessorStates();
     
