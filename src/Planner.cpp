@@ -160,10 +160,15 @@ void TrajectoryPlanner::calculateVelocity() {
      target_vel = (dist(0.0, 0.0, objs_[car_ahead_id_].vx, objs_[car_ahead_id_].vy));
     }
     
+    double acc = max_acc;
+    if (current_state_ != KL) {
+        acc = max_acc/3;
+    }
+    
     if (vel_ - target_vel > 0.1) {
-        vel_ -= max_acc*1.2;
+        vel_ -= acc;
     } else if (target_vel - vel_ > 0.1) {
-        vel_ += max_acc;
+        vel_ += acc;
     }
 }
 
