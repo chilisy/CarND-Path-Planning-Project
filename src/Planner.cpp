@@ -17,6 +17,8 @@ TrajectoryPlanner::~TrajectoryPlanner() {
 void TrajectoryPlanner::getCurrentTelemetry(vector<double> car_telemetry){
     current_x_ = car_telemetry[0];
     current_y_ = car_telemetry[1];
+    s_t_2_ = s_t_1_;
+    s_t_1_ = current_s_;
     current_s_ = car_telemetry[2];
     current_d_ = car_telemetry[3];
     current_yaw_ = car_telemetry[4];
@@ -77,7 +79,7 @@ void TrajectoryPlanner::getSensorData(vector<vector<double> > sensor_data) {
                 
                 if (it->s > current_s_ - CAR_LENGTH && it->s < current_s_ + CAR_LENGTH) {
                     car_left_id_ = it->id;
-                    cout << "car left detected: " << car_left_id_ << endl;
+                    //cout << "car left detected: " << car_left_id_ << endl;
                 }
             }
         }
@@ -91,7 +93,7 @@ void TrajectoryPlanner::getSensorData(vector<vector<double> > sensor_data) {
                 
                 if (it->s > current_s_ - CAR_LENGTH && it->s < current_s_ + CAR_LENGTH) {
                     car_right_id_ = it->id;
-                    cout << "car right detected: " << car_right_id_ << endl;
+                    //cout << "car right detected: " << car_right_id_ << endl;
                 }
             }
         }
@@ -127,14 +129,15 @@ void TrajectoryPlanner::calculateTrajectory() {
     chooseNextState();
     
     if (current_state_ == KL || current_state_ == PCLL || current_state_ == PCLR) {
-        lane_ = lane_ + 0;
-    } else if (current_state_ == CLL) {
+        //driveLane(lane_);
+        changeLane(lane_, lane_);
+    } else if (current_state_ == CLL && state_t_1 == PCLL) {
+        changeLane(lane_, lane_-1);
         lane_--;
-    } else if (current_state_ == CLR) {
+    } else if (current_state_ == CLR && state_t_1 == PCLR) {
+        changeLane(lane_, lane_+1);
         lane_++;
     }
-    
-    driveLane(lane_);
 }
 
 void TrajectoryPlanner::transform2CarCoord(vector<double> &pts_car_x, vector<double> &pts_car_y, double ref_x, double ref_y, double ref_yaw, vector<double> pts_global_x, vector<double> pts_global_y){
@@ -161,7 +164,7 @@ void TrajectoryPlanner::calculateVelocity() {
     }*/
     
     if (vel_ - target_vel > 0.1) {
-        vel_ -= max_acc;
+        vel_ -= max_acc*1.2;
     } else if (target_vel - vel_ > 0.1) {
         vel_ += max_acc;
     }
@@ -195,10 +198,99 @@ void TrajectoryPlanner::driveLane(int lane) {
     ptsy.push_back(ref_y);
     
     
-    vector<int> anchor_pts = {30, 70, 90};
+    vector<int> anchor_pts = {30, 60, 90};
     
     for (vector<int>::iterator it = anchor_pts.begin(); it!=anchor_pts.end(); ++it){
         vector<double> next = getXY(current_s_+*it, 2+4*lane, map_s_, map_x_, map_y_);
+        ptsx.push_back(next[0]);
+        ptsy.push_back(next[1]);
+    }
+    
+    vector<double> ptsx_car_coord(ptsx.size());
+    vector<double> ptsy_car_coord(ptsy.size());
+    
+    transform2CarCoord(ptsx_car_coord, ptsy_car_coord, ref_x, ref_y, ref_yaw, ptsx, ptsy);
+    
+    tk::spline spl;
+    
+    // set points to spline
+    spl.set_points(ptsx_car_coord, ptsy_car_coord);
+    
+    vector<double> x_out(COUNT_GEN_PTS);
+    vector<double> y_out(COUNT_GEN_PTS);
+    
+    // add previous points
+    for (int i=0; i<prev_x_.size(); i++){
+        x_out[i] = prev_x_[i];
+        y_out[i] = prev_y_[i];
+    }
+    
+    vector<double> cal_x, cal_y;
+    
+    double target_x = 30.0;
+    double target_y = spl(target_x);
+    double target_dist = dist(0.0, 0.0, target_x, target_y);
+    
+    //add new points
+    double x_add_on = 0.0;
+    
+    for (int i=prev_x_.size(); i<COUNT_GEN_PTS; i++){
+        calculateVelocity();
+        double N = target_dist/timestep/vel_;
+        double x_point = x_add_on + target_x/N;
+        cal_x.push_back(x_point);
+        cal_y.push_back(spl(x_point));
+        
+        x_add_on = x_point;
+    }
+    
+    vector<double> cal_x_global(cal_x.size());
+    vector<double> cal_y_global(cal_y.size());
+    transform2GlobalCoord(cal_x_global, cal_y_global, ref_x, ref_y, ref_yaw, cal_x, cal_y);
+    
+    int idx = 0;
+    for (int i=prev_x_.size(); i<COUNT_GEN_PTS; i++){
+        x_out[i] = cal_x_global[idx];
+        y_out[i] = cal_y_global[idx];
+        idx++;
+    }
+    
+    next_x_vals = x_out;
+    next_y_vals = y_out;
+}
+
+void TrajectoryPlanner::changeLane(int ego_lane, int target_lane) {
+    vector<double> ptsx, ptsy;
+    
+    double ref_x = current_x_;
+    double ref_y = current_y_;
+    double ref_yaw = deg2rad(current_yaw_);
+    
+    double prev_x = current_x_ - cos(current_yaw_);
+    double prev_y = current_y_ - sin(current_yaw_);
+    
+    
+    if (prev_x_.size() > 2) {
+        ref_x = prev_x_[prev_x_.size()-1];
+        ref_y = prev_y_[prev_x_.size()-1];
+        
+        prev_x = prev_x_[prev_x_.size()-2];
+        prev_y = prev_y_[prev_x_.size()-2];
+        ref_yaw = atan2(ref_y-prev_y, ref_x-prev_x);
+    }
+    
+    ptsx.push_back(prev_x);
+    ptsx.push_back(ref_x);
+    
+    ptsy.push_back(prev_y);
+    ptsy.push_back(ref_y);
+    
+    
+    vector<int> anchor_pts = {30, 60, 90};
+    
+    for (vector<int>::iterator it = anchor_pts.begin(); it!=anchor_pts.end(); ++it){
+        vector<double> ref_s_d = getFrenet(ref_x, ref_y, ref_yaw, map_x_, map_y_);
+        vector<double> next = getXY(ref_s_d[0]+*it, 2+4*target_lane, map_s_, map_x_, map_y_);
         ptsx.push_back(next[0]);
         ptsy.push_back(next[1]);
     }
@@ -284,6 +376,8 @@ void TrajectoryPlanner::chooseNextState() {
     // get possible successor stats
     getSuccessorStates();
     
+    state_t_1 = current_state_;
+    
     // calculate all lane costs
     for (vector<LaneCost>::iterator it = lane_costs_.begin(); it!=lane_costs_.end(); ++it) {
         it->calculateCost();
@@ -292,8 +386,8 @@ void TrajectoryPlanner::chooseNextState() {
     double minCost = 99999999;
     int target_lane_id = lane_;
     for (vector<LaneCost>::iterator it = lane_costs_.begin(); it!=lane_costs_.end(); ++it) {
-        minCost = min(minCost, it->lane_cost);
-        if (minCost == it->lane_cost){
+        if (it->lane_cost<minCost){
+            minCost = it->lane_cost;
             target_lane_id = it->lane_id;
         }
     }
@@ -307,17 +401,6 @@ void TrajectoryPlanner::chooseNextState() {
     if (target_lane_id == lane_) {
         current_state_ = KL;
     }
-    // change lane right
-    else if (target_lane_id > lane_) {
-        // if change lane right possible
-        if (find(possible_states_.begin(), possible_states_.end(), CLR)!=possible_states_.end() &&
-            car_right_id_ == ID_DEFAULT){
-            current_state_ = CLR;
-        }
-        else {
-            current_state_ = PCLR;
-        }
-    }
     // change lane left
     else if (target_lane_id < lane_) {
         // if change lane left possible
@@ -328,6 +411,79 @@ void TrajectoryPlanner::chooseNextState() {
             current_state_ = PCLL;
         }
     }
+    // change lane right
+    else if (target_lane_id > lane_) {
+        // if change lane right possible
+        if (find(possible_states_.begin(), possible_states_.end(), CLR)!=possible_states_.end() &&
+            car_right_id_ == ID_DEFAULT){
+            current_state_ = CLR;
+            
+        }
+        else {
+            current_state_ = PCLR;
+            
+        }
+    }
+}
+
+vector<double> TrajectoryPlanner::JMT(vector<double> start, vector <double> end, double T)
+{
+    /*
+     Calculate the Jerk Minimizing Trajectory that connects the initial state
+     to the final state in time T.
+     
+     INPUTS
+     
+     start - the vehicles start location given as a length three array
+     corresponding to initial values of [s, s_dot, s_double_dot]
+     
+     end   - the desired end state for vehicle. Like "start" this is a
+     length three array.
+     
+     T     - The duration, in seconds, over which this maneuver should occur.
+     
+     OUTPUT
+     an array of length 6, each value corresponding to a coefficent in the polynomial
+     s(t) = a_0 + a_1 * t + a_2 * t**2 + a_3 * t**3 + a_4 * t**4 + a_5 * t**5
+     
+     EXAMPLE
+     
+     > JMT( [0, 10, 0], [10, 10, 0], 1)
+     [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]
+     */
+    vector<double> alpha(6);
+    alpha[0] = start[0];
+    alpha[1] = start[1];
+    alpha[2] = start[2] * 0.5;
     
+    Eigen::Matrix3d M;
+    M << pow(T, 3), pow(T, 4), pow(T, 5),
+    pow(T, 2)*3, pow(T, 3)*4, pow(T, 4)*5,
+    T*6, pow(T, 2)*12, pow(T, 3)*20;
+    
+    Eigen::Vector3d b;
+    b << end[0]-(start[0]+start[1]*T+0.5*start[2]*pow(T,2)),
+    end[1]-(start[1]+start[2]*T),
+    end[2]-start[2];
+    
+    Eigen::Vector3d a = M.colPivHouseholderQr().solve(b);;
+    
+    alpha[3] = a[0];
+    alpha[4] = a[1];
+    alpha[5] = a[2];
+    
+    
+    return alpha;
+    
+}
+
+double TrajectoryPlanner::polyval(double t, vector<double> alpha) {
+    double out = 0.0;
+    int i = 0;
+    for(vector<double>::iterator it = alpha.begin(); it!=alpha.end(); ++it) {
+        out += *it*pow(t, i);
+        i++;
+    }
+    return out;
 }
 

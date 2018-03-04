@@ -15,9 +15,9 @@
 using namespace std;
 
 class LaneCost{
-    const double range_of_concern_ = 50.0;
+    const double range_of_concern_ = 33.0;
     
-    const double weight_speed = 5.0*pow(10, 4);
+    const double weight_speed = 6.0*pow(10, 4);
     const double weight_lane = pow(10, 4);
     
     // telemetry

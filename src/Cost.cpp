@@ -56,8 +56,8 @@ void LaneCost::calculateLaneSpeed() {
 
 void LaneCost::calculateTargetCost() {
     
-    double cost = 1-exp(-abs(lane_id-target_lane)) + (lane_id)*0.001;
-    
+    //double cost = 1-exp(-abs(lane_id-target_lane)) + (lane_id)*0.001;
+    double cost = 1-exp(-abs(lane_id-target_lane));
     target_lane_cost_ =  cost * weight_lane;
 }
 

@@ -34,7 +34,9 @@ class TrajectoryPlanner{
     // telemetry
     double current_x_;
     double current_y_;
-    double current_s_;
+    double current_s_ = 0.0;
+    double s_t_1_ = 0.0;
+    double s_t_2_ = 0.0;
     double current_d_;
     double current_yaw_;
     double current_speed_;
@@ -58,6 +60,7 @@ class TrajectoryPlanner{
     
     // FSM
     FSM_State current_state_;
+    FSM_State state_t_1;
     vector<FSM_State> possible_states_;
     
     // costs
@@ -74,9 +77,15 @@ class TrajectoryPlanner{
     
     void driveLane(int lane);
     
+    void changeLane(int ego_lane, int target_lane);
+    
     void getSuccessorStates();
     
     void chooseNextState();
+    
+    vector<double> JMT(vector<double> start, vector <double> end, double T);
+    
+    double polyval(double t, vector<double> alpha);
     
     void transform2CarCoord(vector<double> &pts_car_x, vector<double> &pts_car_y, double ref_x, double ref_y, double ref_yaw, vector<double> pts_global_x, vector<double> pts_global_y);
     

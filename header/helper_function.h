@@ -44,8 +44,8 @@ const double timestep = 0.02;
 
 // max velocity
 const double max_vel = 49.5;
-const double max_acc = 9.5 * timestep;
-const double max_jerk = 9.5 * timestep;
+const double max_acc = 7.5 * timestep;
+const double max_jerk = 7.5 * timestep;
 
 // target lane
 const int target_lane = 1;
