@@ -77,7 +77,7 @@ void TrajectoryPlanner::getSensorData(vector<vector<double> > sensor_data) {
                 // add obj
                 lane_costs_[lane_-1].add_vehicle(*it);
                 
-                if (it->s > current_s_ - CAR_LENGTH && it->s < current_s_ + CAR_LENGTH) {
+                if (it->s > current_s_ - CAR_LENGTH && it->s < current_s_ + 2*CAR_LENGTH) {
                     car_left_id_ = it->id;
                     //cout << "car left detected: " << car_left_id_ << endl;
                 }
@@ -91,7 +91,7 @@ void TrajectoryPlanner::getSensorData(vector<vector<double> > sensor_data) {
                 // add obj
                 lane_costs_[lane_+1].add_vehicle(*it);
                 
-                if (it->s > current_s_ - CAR_LENGTH && it->s < current_s_ + CAR_LENGTH) {
+                if (it->s > current_s_ - CAR_LENGTH && it->s < current_s_ + 2*CAR_LENGTH) {
                     car_right_id_ = it->id;
                     //cout << "car right detected: " << car_right_id_ << endl;
                 }
@@ -154,10 +154,11 @@ void TrajectoryPlanner::transform2GlobalCoord(vector<double> &pts_global_x, vect
 
 void TrajectoryPlanner::calculateVelocity() {
     
-    double target_vel = lane_costs_[lane_].lane_speed;
-    /*if (car_ahead_id_ != ID_DEFAULT) {
+    //double target_vel = lane_costs_[lane_].lane_speed;
+    double target_vel = max_vel*mph2ms;
+    if (car_ahead_id_ != ID_DEFAULT) {
      target_vel = (dist(0.0, 0.0, objs_[car_ahead_id_].vx, objs_[car_ahead_id_].vy));
-     }*/
+    }
     
     if (vel_ - target_vel > 0.1) {
         vel_ -= max_acc*1.2;
