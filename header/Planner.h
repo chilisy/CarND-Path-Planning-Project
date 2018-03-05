@@ -101,7 +101,7 @@ public:
     virtual ~TrajectoryPlanner();
     
     // methods:
-    void readMap(string mapfile);
+    void readMap();
     
     void getCurrentTelemetry(vector<double> car_telemetry);
     

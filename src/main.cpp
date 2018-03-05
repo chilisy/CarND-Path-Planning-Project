@@ -24,12 +24,8 @@ string hasData(string s) {
 int main() {
     uWS::Hub h;
     
-    // Waypoint map to read from
-    string map_file_ = "../../data/highway_map.csv";
-    
-    
     TrajectoryPlanner tp = TrajectoryPlanner();
-    tp.readMap(map_file_);
+    tp.readMap();
     
     h.onMessage([&tp](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                                                                                                          uWS::OpCode opCode) {

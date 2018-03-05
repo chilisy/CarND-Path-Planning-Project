@@ -30,6 +30,7 @@ void TrajectoryPlanner::getCurrentTelemetry(vector<double> car_telemetry){
         it->set_lane(iLane);
         iLane++;
     }
+    cout << "Get Telemetry" << endl;
 }
 
 void TrajectoryPlanner::getPreviousPath(vector<double> prev_x_path, vector<double> prev_y_path){
@@ -79,7 +80,7 @@ void TrajectoryPlanner::getSensorData(vector<vector<double> > sensor_data) {
                 
                 if (it->s > current_s_ - CAR_LENGTH && it->s < current_s_ + 2*CAR_LENGTH) {
                     car_left_id_ = it->id;
-                    //cout << "car left detected: " << car_left_id_ << endl;
+                    cout << "car left detected: " << car_left_id_ << endl;
                 }
             }
         }
@@ -93,15 +94,19 @@ void TrajectoryPlanner::getSensorData(vector<vector<double> > sensor_data) {
                 
                 if (it->s > current_s_ - CAR_LENGTH && it->s < current_s_ + 2*CAR_LENGTH) {
                     car_right_id_ = it->id;
-                    //cout << "car right detected: " << car_right_id_ << endl;
+                    cout << "car right detected: " << car_right_id_ << endl;
                 }
             }
         }
     }
+    cout << "Get sensor data" << endl;
 }
 
-void TrajectoryPlanner::readMap(string mapfile) {
-    ifstream in_map_(mapfile.c_str(), ifstream::in);
+void TrajectoryPlanner::readMap() {
+    // Waypoint map to read from
+    string map_file_ = "../data/highway_map.csv";
+    
+    ifstream in_map_(map_file_.c_str(), ifstream::in);
     
     string line;
     while (getline(in_map_, line)) {
@@ -122,6 +127,9 @@ void TrajectoryPlanner::readMap(string mapfile) {
         map_dx_.push_back(d_x);
         map_dy_.push_back(d_y);
     }
+    if (map_x_.size() == 0) {
+        cout << "Error: no map found!" << endl;
+    }
 }
 
 void TrajectoryPlanner::calculateTrajectory() {
@@ -133,7 +141,12 @@ void TrajectoryPlanner::calculateTrajectory() {
     } else if (current_state_ == CLR && state_t_1 == PCLR) {
         ++lane_;
     }
+    
+    cout << "Lane " << lane_ << endl;
+    
     driveLane();
+    
+    cout << "Trajectory calculated! " << endl;
 }
 
 void TrajectoryPlanner::transform2CarCoord(vector<double> &pts_car_x, vector<double> &pts_car_y, double ref_x, double ref_y, double ref_yaw, vector<double> pts_global_x, vector<double> pts_global_y){
@@ -162,7 +175,7 @@ void TrajectoryPlanner::calculateVelocity() {
     
     double acc = max_acc;
     if (current_state_ != KL) {
-        acc = max_acc/3;
+        acc = max_acc/4;
     }
     
     if (vel_ - target_vel > 0.1) {
@@ -170,6 +183,8 @@ void TrajectoryPlanner::calculateVelocity() {
     } else if (target_vel - vel_ > 0.1) {
         vel_ += acc;
     }
+    
+    cout << "velocity calculated" << endl;
 }
 
 void TrajectoryPlanner::driveLane() {
@@ -199,14 +214,20 @@ void TrajectoryPlanner::driveLane() {
     ptsy.push_back(prev_y);
     ptsy.push_back(ref_y);
     
+    cout << "Starting points created" << endl;
     
     vector<int> anchor_pts = {25, 60, 90};
     
+    cout << "Anchor points defined" << endl;
+    
     for (vector<int>::iterator it = anchor_pts.begin(); it!=anchor_pts.end(); ++it){
+        cout << "ref_x: " << ref_x << ", ref_y: " << ref_y << ", ref_yaw: " << ref_yaw << endl;
         vector<double> ref_s_d = getFrenet(ref_x, ref_y, ref_yaw, map_x_, map_y_);
-        vector<double> next = getXY(ref_s_d[0]+*it, 2+4*lane_, map_s_, map_x_, map_y_);
-        ptsx.push_back(next[0]);
-        ptsy.push_back(next[1]);
+        cout << "Ref coordinate in Frenet calculated" << endl;
+        vector<double> next_xy = getXY(ref_s_d[0]+*it, 2+4*lane_, map_s_, map_x_, map_y_);
+        cout << "Anchor points calculated" << endl;
+        ptsx.push_back(next_xy[0]);
+        ptsy.push_back(next_xy[1]);
     }
     
     vector<double> ptsx_car_coord(ptsx.size());
@@ -219,6 +240,8 @@ void TrajectoryPlanner::driveLane() {
     // set points to spline
     spl.set_points(ptsx_car_coord, ptsy_car_coord);
     
+    cout << "Spline created" << endl;
+    
     vector<double> x_out(COUNT_GEN_PTS);
     vector<double> y_out(COUNT_GEN_PTS);
     
@@ -227,6 +250,8 @@ void TrajectoryPlanner::driveLane() {
         x_out[i] = prev_x_[i];
         y_out[i] = prev_y_[i];
     }
+    
+    cout << "Previous points added to trajectory" << endl;
     
     vector<double> cal_x, cal_y;
     
@@ -247,9 +272,13 @@ void TrajectoryPlanner::driveLane() {
         x_add_on = x_point;
     }
     
+    cout << "New points calculated for trajectory" << endl;
+    
     vector<double> cal_x_global(cal_x.size());
     vector<double> cal_y_global(cal_y.size());
     transform2GlobalCoord(cal_x_global, cal_y_global, ref_x, ref_y, ref_yaw, cal_x, cal_y);
+    
+    cout << "New points transformed to global coordinate system" << endl;
     
     int idx = 0;
     for (int i=prev_x_.size(); i<COUNT_GEN_PTS; i++){
@@ -258,8 +287,12 @@ void TrajectoryPlanner::driveLane() {
         idx++;
     }
     
+    cout << "New points added to trajectory" << endl;
+    
     next_x_vals = x_out;
     next_y_vals = y_out;
+    
+    cout << "trajectory calculation complete" << endl;
 }
 
 void TrajectoryPlanner::getSuccessorStates() {
@@ -354,7 +387,7 @@ void TrajectoryPlanner::chooseNextState() {
             current_state_ = KL;
         }
     }
-    // cout << current_state_ << endl;
+    cout << "Current state: " << current_state_ << endl;
 }
 
 vector<double> TrajectoryPlanner::JMT(vector<double> start, vector <double> end, double T)
@@ -403,9 +436,7 @@ vector<double> TrajectoryPlanner::JMT(vector<double> start, vector <double> end,
     alpha[4] = a[1];
     alpha[5] = a[2];
     
-    
     return alpha;
-    
 }
 
 double TrajectoryPlanner::polyval(double t, vector<double> alpha) {
