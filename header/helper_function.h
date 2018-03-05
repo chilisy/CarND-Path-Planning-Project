@@ -8,7 +8,7 @@
 #ifndef helper_function_h
 #define helper_function_h
 
-#include <math.h>
+#include <cmath>
 #include <vector>
 
 using namespace std;

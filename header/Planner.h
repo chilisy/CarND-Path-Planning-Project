@@ -10,7 +10,7 @@
 
 #include "helper_function.h"
 #include "spline.h"
-#include <math.h>
+#include <cmath>
 #include <vector>
 #include <iostream>
 #include <fstream>

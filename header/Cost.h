@@ -9,7 +9,7 @@
 #define Cost_h
 
 #include "helper_function.h"
-#include <math.h>
+#include <cmath>
 #include <vector>
 
 using namespace std;
